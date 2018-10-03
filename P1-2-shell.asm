@@ -31,12 +31,12 @@
 
 # Allocate arrays - *NOT* DONE
 # Complete main Loop outline - DONE
-# Complete Flagger and Opener sorting logic - DONE
+# Complete flagger and Opener sorting logic - *NOT* DONE
 # Mke sure "jr"'s are functioning properly - *NOT* DONE
 # Make sure the program is indexing correctly - *NOT* DONE
 # Create array of neighboring values and assign to correct array - *NOT* DONE
 # Create array of neighboring value INDECIES - *NOT* DONE
-# Complete Flagger and Opener action loops - DONE*???*
+# Complete flagger and Opener action loops - DONE*???*
 # Comment all code - 70% DONE
 
 .data
@@ -73,7 +73,7 @@ skip:		sb $4, mainArr[$28]	# store the returned value into the master array
 			sb $0, knownArr[$0] # Store the index of the guessed value into knownArr	
 
 			# MAIN LOOP
-Loop:		add $23, $0, $0		# Reset Flag conditional 
+MainLoop:	add $23, $0, $0		# Reset Flag conditional 
 			add $24, $0, $0		# Reset Open conditional 
 			j Flag				# Run the flag function
 			j Open				# Run the Open function
@@ -86,16 +86,16 @@ Loop:		add $23, $0, $0		# Reset Flag conditional
 
 Open:		add $20, $0, $0
 			add $21, $0, $0
-			lbu $11, nearArr[$10]# Load current index value into $11
-nearBombs:	lbu $19, nearArr[$20]
-			addi $20, $20, 4	# Add 4 to array index
-			bne $19, $7 nearBombs
+nearBombsO:	lbu $11, nearArr[$10]# Load current index value into $11
+			lbu $19, nearArr[$20]
+			addi $20, $20, 1	# Add 4 to array index
+			bne $19, $7 nearBombsO
 			addi $21, $21, 1	# Add 1 to count of nearby flagged squares
-			bne $20, $8 nearBombs
+			bne $20, $8 nearBombsO
 			bne $21, $11, Open
 
 			# OPEN SQUARES
-			add $14, $14, $0
+			add $14, $14, $0	# (Re-)Initialize index-er
 			addi $23, $0, 1		# Make conditional true
 opener:		lbu $12, nearArr[$14]# Index at first neighbor value
 			addi $14, $14, 1	# Add 1 to the nearArr index-er
@@ -106,22 +106,24 @@ opener:		lbu $12, nearArr[$14]# Index at first neighbor value
 			add  $2, $0, $13	# Mine field position 25
             addi  $3, $0, 0     # Open
             swi   568           # returns result in $4 (9)
-			bne $14, $8, opener# Loop until Run through all indexes
+			bne $14, $8, opener # Loop until Run through all indexes
+			bne $20, $18, Open	# Loop Open until run through all squares availables
 
 
-Flag:		add $20, $0, $0
+
+Flag:		add $20, $0, $0		# (Re-)Initialize index-ers
 			add $21, $0, $0
 			add $22, $0, $0
 			add $16, $0, $0
-			lbu $11, nearArr[$10]# Load current index value into $11
-nearBombs:	lbu $19, nearArr[$20]
-			addi $20, $20, 4	# Add 4 to array index
+nearBombs:	lbu $11, nearArr[$10]# Load current index value into $11
+			lbu $19, nearArr[$20]# Load first value to index
+			addi $20, $20, 1	# Add 4 to array index
 			bne $19, $7 nearBombs
 			addi $21, $21, 1	# Add 1 to count of nearby flagged squares
 			bne $20, $8 nearBombs
 			add $20, $0, $0
 nearClosed: lbu $19, nearArr[$20]
-			addi $20, $20, 4	# Add 4 to array index
+			addi $20, $20, 1	# Add 4 to array index
 			bne $19, $9 nearClosed
 			addi $22, $22, 1	# Add 1 to count of nearby closed squares
 			bne $20, $8 nearClosed
@@ -134,18 +136,19 @@ nearClosed: lbu $19, nearArr[$20]
 			beq $11, $21, Flag	# If number of nearby flagged bombs equals the current index, loop back
 
 			# ASSIGNS FLAGS
-			add $14, $14, $0
+			add $14, $14, $0	# (Re-)Initialize index-er
 			addi $24, $0, 1		# Make conditional true
 flagger:	lbu $12, nearArr[$14]
 			addi $14, $14, 1	# Add 1 to the nearArr index-er
-			bne $12, $13 opener # Check if the neighbor is closed, if not skip to next neighbor
+			bne $12, $13 flagger # Check if the neighbor is closed, if not skip to next neighbor
 			addi $5, $5, 1		# If so, add 1 to number of flagged squares
 			lbu $13 indexArr[$14]# Load the 
 			sb $13, mainArr[$13]# Store the value of a flagged square in the mainArr
 			add  $2, $0, $13	# Mine field position 25
             addi  $3, $0, 1     # Flag
             swi   568           # returns result in $4 (9)
-			bne $14, $8, opener# Loop until Run through all indexes
+			bne $14, $8, flagger# Loop until Run through all indexes
+			bne $20, $18, Flag	# Loop Flag until run through all squares availables
 
 
 # Index at first neighbor value
