@@ -11,7 +11,7 @@
 # $6 = master array
 # $7 = -1
 # $8 = 8 (max index of nearArr)
-# $9 = 10 (value of index of mainArr?)
+# $9 = 10 (value of flagged of mainArr)
 # $10 = Current master index
 # $11 = where mainArr[$10] is loaded into
 # $12 = nearArr indexer
@@ -29,48 +29,58 @@
 # $27 = 4
 # $28 = array index regster
 
+# Allocate arrays - *NOT* DONE
+# Complete main Loop outline - DONE
+# Complete Flagger and Opener sorting logic - DONE
+# Mke sure "jr"'s are functioning properly - *NOT* DONE
+# Make sure the program is indexing correctly - *NOT* DONE
+# Create array of neighboring values and assign to correct array - *NOT* DONE
+# Create array of neighboring value INDECIES - *NOT* DONE
+# Complete Flagger and Opener action loops - DONE*???*
+# Comment all code - 70% DONE
+
 .data
 # your data allocation/initialization goes here
 
-mainArr: .word 256
-knownArr: .word 256
+mainArr: .word 256	# Master Array
+knownArr: .word 256	# Array of known values
 nearArr: .word 32
 indexArr: .word 32
 
 .text
 
-MineSweep:	swi   567	   	    # Bury mines (returns # buried in $1)
+			# First code run
+			swi   567	   	    # Bury mines (returns # buried in $1)
 			add $5, $0, $0		# Creates initial variable to put flags in
-			addi $7, $0, -1
-			addi $9, $0, 10
+			addi $7, $0, -1		# Initialize $7 to be value of a bomb
+			addi $9, $0, 10		# Initialize $9 to be the value assigned to flagged squares
 			add $29, $31, $0	# Save memory link
-			addi $27, $0, 4
+			addi $27, $0, 4		# Initialize $27 to 4 
 			addi $8, $0, 8
 
 			# INITIAL GUESS
 			addi  $2, $0, 0		# Mine field position 0
             addi  $3, $0, -1    # Guess
             swi   568           # returns result in $4 (-1: mine; 0-8: count)
-			beq $4, $7 bomb
-			
-			mult $2, $27		# Get correct index
-			mfhi $28			# Load index into $28
-			sb $4, mainArr[$28]	# store the returned value into the master array
-			sb $28, knownArr[$0] 	
+			bne $4, $7 skip		# If the guess did not return a bomb, run skip
+			addi $5, $5, 1		# Adds 1 to the total number of flags
+			addi $4, $0, 9
 
+			#mult $2, $27		# Get correct index
+			#mfhi $28			# Load index into $28
+			
+skip:		sb $4, mainArr[$28]	# store the returned value into the master array
+			sb $0, knownArr[$0] # Store the index of the guessed value into knownArr	
+
+			# MAIN LOOP
 Loop:		add $23, $0, $0		# Reset Flag conditional 
-			add $23, $0, $0		# Reset Open conditional 
+			add $24, $0, $0		# Reset Open conditional 
 			j Flag				# Run the flag function
 			j Open				# Run the Open function
 			add $25, $24, $23	# Add both conditinoal values
 			beq $26, $25 Guess	# If neither do anything, run Guess function
 			bne $1, $5 Loop		# If the number of flags != number of bombs, keep looping
 			jr  $29  	  		# return to OS
-          
-
-bomb:		addi $5, $5, 1		# Adds 1 to the total number of flags
-			addi $4, $0, 9
-			jr $31
 
 
 
@@ -85,8 +95,18 @@ nearBombs:	lbu $19, nearArr[$20]
 			bne $21, $11, Open
 
 			# OPEN SQUARES
-
-
+			add $14, $14, $0
+			addi $23, $0, 1		# Make conditional true
+opener:		lbu $12, nearArr[$14]# Index at first neighbor value
+			addi $14, $14, 1	# Add 1 to the nearArr index-er
+			bne $12, $13 opener # Check if the neighbor is closed, if not skip to next neighbor
+			addi $5, $5, 1		# If so, add 1 to number of opened squares
+			lbu $13 indexArr[$14]# Load the 
+			sb $13, mainArr[$13]# Store the value of a opened square in the mainArr
+			add  $2, $0, $13	# Mine field position 25
+            addi  $3, $0, 0     # Open
+            swi   568           # returns result in $4 (9)
+			bne $14, $8, opener# Loop until Run through all indexes
 
 
 Flag:		add $20, $0, $0
@@ -116,16 +136,28 @@ nearClosed: lbu $19, nearArr[$20]
 			# ASSIGNS FLAGS
 			add $14, $14, $0
 			addi $24, $0, 1		# Make conditional true
-flagger:	lbu $12, nearArr[$14]# Index at first neighbor value
+flagger:	lbu $12, nearArr[$14]
 			addi $14, $14, 1	# Add 1 to the nearArr index-er
-			bne $12, $13 flagger# Check if the neighbor is closed, if not skip to next neighbor
+			bne $12, $13 opener # Check if the neighbor is closed, if not skip to next neighbor
 			addi $5, $5, 1		# If so, add 1 to number of flagged squares
-			lbu $13 indexArr[$14]
+			lbu $13 indexArr[$14]# Load the 
 			sb $13, mainArr[$13]# Store the value of a flagged square in the mainArr
 			add  $2, $0, $13	# Mine field position 25
             addi  $3, $0, 1     # Flag
             swi   568           # returns result in $4 (9)
-			bne $14, $8, flagger# Loop until Run through all indexes
+			bne $14, $8, opener# Loop until Run through all indexes
+
+
+# Index at first neighbor value
+			# addi $14, $14, 1	# Add 1 to the nearArr index-er
+			# bne $12, $13 flagger# Check if the neighbor is closed, if not skip to next neighbor
+			# addi $5, $5, 1		# If so, add 1 to number of flagged squares
+			# lbu $13 indexArr[$14]
+			# sb $13, mainArr[$13]# Store the value of a flagged square in the mainArr
+			# add  $2, $0, $13	# Mine field position 25
+            # addi  $3, $0, 1     # Flag
+            # swi   568           # returns result in $4 (9)
+			# bne $14, $8, flagger# Loop until Run through all indexes
 
 # upLeftF:	addi $24, $0, 1		# Make conditional true
 # 			lbu $12, nearArr[$0]# Index at first neighbor value
