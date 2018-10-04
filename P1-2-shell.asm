@@ -30,6 +30,7 @@
     # $27 = 9 (Number of closed square)
     # $28 = value of neighbor square
     # $29 = Memory Location of exit
+	# $30 = register used to return to previous command
 
     # Allocate arrays - DONE*???*
     # Complete main Loop outline - DONE
@@ -44,8 +45,8 @@
 .data
 
 			mainArr: .word 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF
-			nearArr: .word 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF     # Array of neighbor squares' values
-			indexArr: .word 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF     # Array of neighbor squares' indices 
+			nearArr: .word 0xFFFFFFFF, 0xFFFFFFFF    # Array of neighbor squares' values
+			indexArr: .word 0xFFFFFFFF, 0xFFFFFFFF     # Array of neighbor squares' indices 
 
 .text
 			# First code run
@@ -55,7 +56,7 @@
 			addi $9, $0, 10		    # Initialize $9 to be the value assigned to flagged squares
 			add $29, $31, $0	    # Save memory link
 			addi $27, $0, 9		    # Initialize $27 to 9 
-			addi $8, $0, 7		    # Initialize $8 to max value of neighbor arrays
+			addi $8, $0, 8		    # Initialize $8 to max value of neighbor arrays
 			addi $13, $0, 1		    # Assume 1 square will be known from first guess
 
 			    # INITIAL GUESS
@@ -72,21 +73,24 @@ skip:		sb $4, mainArr($0)	    # store the returned value into the master array
 			    # MAIN LOOP
 MainLoop:	add $23, $0, $0		    # Reset Flag conditional 
 			add $24, $0, $0		    # Reset Open conditional 
-			j Flag				    # Run the flag function
-			j Open				    # Run the Open function
+			add $10, $0, $0
+			jal Flag				    # Run the flag function
+			add $10, $0, $0
+			jal Open				    # Run the Open function
 			add $25, $24, $23	    # Add both conditinoal values
+			addi $16, $0, 255
 			beq $0, $25 Guess	    # If neither do anything, run Guess function
 			bne $1, $5 MainLoop	    # If the number of flags != number of bombs, keep looping
 			jr  $29  	  		    # return to OS - ENDS
 
 
-Open:		add $20, $0, $0		    # (Re-)Initialize index-ers
+Open:		add $30, $31, $0
+			add $20, $0, $0		    # (Re-)Initialize index-ers
 			addi $21, $0, 1
 			add $16, $0, $0
 			add $28, $0, $0
-			add $10, $0, $0
-			addi $10, $10, 1	    # Add 1 to known squares index-er
-			lbu $11, mainArr($10)  # Load current index value into $11
+			
+			#lbu $11, mainArr($10)  # Load current index value into $11
 			# CREATES INDEX OF NEIGHBOR VALUES
 
 			beq $10, $0 NoNW	# These are selectors to decide which loop to run 
@@ -120,18 +124,17 @@ Open:		add $20, $0, $0		    # (Re-)Initialize index-ers
 
 nearBombsO:	lbu $19, nearArr($20)   # Load current neighbor value into $19
 			addi $20, $20, 1	    # Add 1 to array index
+			beq $20, $8 endifO		# Loop until the index value is 7
 			bne $19, $7 nearBombsO  # If the neighbor is not a bomb, re-loop
 			addi $16, $16, 1	    # Add 1 to count of nearby flagged squares
 			bne $16, $11, Open	    # If the square's value is equal to the number of flagged squares, skip
-			beq $20, $8 opener      # Loop through values until all of the neighbor values have been run through
-			bne $10, $13, Open		# Keep looping until all known values are run through
-			jr $31
 
 			# OPENS SQUARES
 			add $14, $14, $0	    # (Re-)Initialize index-er
 			addi $23, $0, 1		    # Make conditional true
 opener:		lbu $12, nearArr($14)   # Index at first neighbor value
 			addi $14, $14, 1	    # Add 1 to the nearArr index-er
+			bne $14, $8, opener     # Loop until Run through all indexes
 			bne $12, $27 opener     # Check if the neighbor is closed, if not skip to next neighbor
 			addi $13, $13, 1		# Add 1 to number of known values
 			lbu $13 indexArr($14)   # Load the index of the neighbor square into $13
@@ -139,22 +142,20 @@ opener:		lbu $12, nearArr($14)   # Index at first neighbor value
             addi  $3, $0, 0         # Open
             swi   568               # returns result in $4 (9)
 			sb $4, mainArr($13)     # Store the value of a opened square in the mainArr
-			bne $14, $8, opener     # Loop until Run through all indexes
-			bne $20, $13, Open	    # Loop Open until run through all squares availables
+endifO:		addi $10, $0, 1
+			bne $10, $13, Open	    # Loop Open until run through all squares availables
+			jr $30
 
-
-
-Flag:		add $20, $0, $0		    # (Re-)Initialize index-ers
+Flag:		add $30, $31, $0
+			add $20, $0, $0		    # (Re-)Initialize index-ers
 			add $21, $0, $0
 			add $22, $0, $0
-			add $10, $0, $0
-			addi $10, $10, 1	    # Add 1 to known squares index-er
 			lbu $11, mainArr($10)  # Load current index value into $11
 			# CREATES INDEX OF NEIGHBOR VALUES
 
-			beq $10, $0 NoNW	# These are selectors to decide which loop to run 
+			beq $10, $0 NoNW		# These are selectors to decide which loop to run 
 			addi $28, $0, 7
-			beq $10, $28 NoNE	# For example, if the current array index is 124, we know that this is the pixel with no North or East neighbors
+			beq $10, $28 NoNE		# For example, if the current array index is 124, we know that this is the pixel with no North or East neighbors
 			addi $28, $0, 55
 			beq $10, $28 NoSW
 			addi $28, $0, 63
@@ -168,7 +169,7 @@ Flag:		add $20, $0, $0		    # (Re-)Initialize index-ers
 			slt $18, $2, $10
 			bne $18, $0, NoS
 
-			addi $28, $0, 8		# I use Mod to find whether a pixel is at an index with no East or West neighbor
+			addi $28, $0, 8			# I use Mod to find whether a pixel is at an index with no East or West neighbor
 			div $10, $28
 			mfhi	$18
 			beq $18 $0, NoW
@@ -180,12 +181,12 @@ Flag:		add $20, $0, $0		    # (Re-)Initialize index-ers
 			j neighbors
 
 
-nearBombs:	lbu $11, mainArr($10)  # Load current index value into $11
+nearBombs:	lbu $11, mainArr($10)   # Load current index value into $11
 			lbu $19, nearArr($20)   # Load neighbor value to index
 			addi $20, $20, 1	    # Add 1 to array index
-			bne $19, $7 nearBombs
+			beq $20, $8 endif		# Loop until the index value is 7
+			bne $19, $7 nearBombs	# If the value of the square is not a bomb, skip it
 			addi $21, $21, 1	    # Add 1 to count of nearby flagged squares
-			bne $20, $8 nearBombs
 			add $20, $0, $0
 nearClosed: lbu $19, nearArr($20)
 			addi $20, $20, 1	    # Add 1 to array index
@@ -193,20 +194,18 @@ nearClosed: lbu $19, nearArr($20)
 			addi $22, $22, 1	    # Add 1 to count of nearby closed squares
 			bne $20, $8 nearClosed
 			add $18, $21, $22	    # Finds total size
-			addi $16, $16, 1	    # Incriment $16 by 1 
 			bne $18, $11, Flag	    # If Totalsize is not equal, loop back
 			beq $0, $11, Flag	    # If the current index equals zero, loop back
 			beq $0, $22, Flag	    # If number of closed squares nearby equals 0, loop back
 			beq $11, $21, Flag	    # If number of nearby flagged bombs equals the current index, loop back
-			bne $16, $8, flagger    # Loop until Run through all indexes
 			bne $10, $13, Flag		# Keep looping until all known values are run through
-			jr $31
 
 			# ASSIGNS FLAGS
 			add $14, $14, $0	    # (Re-)Initialize index-er
 			addi $24, $0, 1		    # Make conditional true
 flagger:	lbu $12, nearArr($14)	# Load the value of the neighbor into $12
 			addi $14, $14, 1	    # Add 1 to the nearArr index-er
+			bne $14, $8, flagger    # Loop until Run through all indexes
 			beq $12, $9 flagger     # Check if the neighbor is flagged, if not skip to next neighbor
 			addi $13, $13, 1		# Add 1 to number of known values
 			addi $5, $5, 1		    # If neighbor is not closed, add 1 to number of flagged squares
@@ -215,11 +214,14 @@ flagger:	lbu $12, nearArr($14)	# Load the value of the neighbor into $12
             addi  $3, $0, 1         # Flag
             swi   568               # returns result in $4 (9)
 			sb $4, mainArr($13)     # Store the value of a flagged square in the mainArr
-			bne $14, $8, flagger    # Loop until Run through all indexes
-			bne $20, $18, Flag	    # Loop Flag until run through all squares availables
-			jr $31
+endif:		addi $10, $0, 1
+			bne $20, $13, Flag	    # Loop Flag until run through all squares availables
+			jr $30
 
-Guess:		addi  $2, $0, 0		    # Mine field position 0
+Guess:		addi $23, $23, 1
+			lbu $24, mainArr($23)
+			bne $24, $16, Guess		# If the index of mainArr at $23 isnt FF, then loop until it does
+			add  $2, $0, $23		# Mine field position 0
             addi  $3, $0, -1        # Guess
             swi   568               # returns result in $4 (-1: mine; 0-8: count)
 			bne $4, $7 skip		    # If the guess did not return a bomb, run skip
@@ -228,66 +230,74 @@ Guess:		addi  $2, $0, 0		    # Mine field position 0
 			j skip
 
 
-NoNW:		j E
-			j S
-			j SE
+NoNW:		jal E
+			jal S
+			jal SE
+			add $20, $0, $0
 			beq $21, $0 nearBombs
 			j nearBombsO
 
-NoNE:		j W
-			j SW
-			j S
+NoNE:		jal W
+			jal SW
+			jal S
+			add $20, $0, $0
 			beq $21, $0 nearBombs
 			j nearBombsO
 
 
-NoSW:		j N
-			j NE
-			j E
+NoSW:		jal N
+			jal NE
+			jal E
+			add $20, $0, $0
 			beq $21, $0 nearBombs
 			j nearBombsO
 			
 
 
-NoSE:		j NW
-			j N
-			j W
+NoSE:		jal NW
+			jal N
+			jal W
+			add $20, $0, $0
 			beq $21, $0 nearBombs
 			j nearBombsO
 
 
-NoN:		j W
-			j E
-			j SW
-			j S
-			j SE
+NoN:		jal W
+			jal E
+			jal SW
+			jal S
+			jal SE
+			add $20, $0, $0
 			beq $21, $0 nearBombs
 			j nearBombsO
 
 
-NoW:		j N
-			j NE
-			j E
-			j S
-			j SE
+NoW:		jal N
+			jal NE
+			jal E
+			jal S
+			jal SE
+			add $20, $0, $0
 			beq $21, $0 nearBombs
 			j nearBombsO
 
 
-NoE:		j NW
-			j N
-			j W
-			j SW
-			j S
+NoE:		jal NW
+			jal N
+			jal W
+			jal SW
+			jal S
+			add $20, $0, $0
 			beq $21, $0 nearBombs
 			j nearBombsO
 
 
-NoS:		j NW
-			j N
-			j NE
-			j W
-			j E
+NoS:		jal NW
+			jal N
+			jal NE
+			jal W
+			jal E
+			add $20, $0, $0
 			beq $21, $0 nearBombs
 			j nearBombsO
 
@@ -295,15 +305,16 @@ NoS:		j NW
 
 	 
 			 # Value and index of northwest neighbor
-neighbors:  j NW
-			j N
-			j NE
-			j W
-			j E
-			j SW
-			j S
-			j SE
+neighbors:  jal NW
+			jal N
+			jal NE
+			jal W
+			jal E
+			jal SW
+			jal S
+			jal SE
 			beq $21, $0 nearBombs
+			add $20, $0, $0
 			j nearBombsO
 
 
