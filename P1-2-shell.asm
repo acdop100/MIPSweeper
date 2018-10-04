@@ -13,13 +13,13 @@
     # $8 = 7 (max index of nearArr, 0-7)
     # $9 = 10 (value of flagged of mainArr)
     # $10 = Current master index
-    # $11 = Where mainArr[$10] is loaded into
+    # $11 = Where mainArr($10) is loaded into
     # $12 = NearArr indexer
     # $13 = Number of values in mainArr
     # $16 = flag loop conditional
     # $17 = 
 	# $18 = 
-    # #19 = Value of nearArr[i]
+    # #19 = Value of nearArr(i)
     # $20 = Array index-er
     # $21 = Number of nearby closed squares
     # $22 = Number of nearby bombs
@@ -43,13 +43,13 @@
 
 .data
 
-mainArr: .word 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909
-nearArr: .word 0x09090909, 0x09090909, 0x09090909, 0x09090909     # Array of neighbor squares' values
-indexArr: .word 0x09090909, 0x09090909, 0x09090909, 0x09090909     # Array of neighbor squares' indices 
+			mainArr: .word 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF
+			nearArr: .word 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF     # Array of neighbor squares' values
+			indexArr: .word 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF     # Array of neighbor squares' indices 
 
 .text
-			    # First code run
-			swi   567	   	        # Bury mines (returns     # buried in $1)
+			# First code run
+			swi   567	   	        # Bury mines (returns # buried in $1)
 			add $5, $0, $0		    # Creates initial variable to put flags in
 			addi $7, $0, -1		    # Initialize $7 to be value of a bomb
 			addi $9, $0, 10		    # Initialize $9 to be the value assigned to flagged squares
@@ -66,8 +66,8 @@ indexArr: .word 0x09090909, 0x09090909, 0x09090909, 0x09090909     # Array of ne
 			addi $5, $5, 1		    # Adds 1 to the total number of flags
 			addi $4, $0, 9
 			
-skip:		sb $4, mainArr[$0]	    # store the returned value into the master array
-			#sb $0, mainArr[$0]      # Store the index of the guessed value into mainArr	
+skip:		sb $4, mainArr($0)	    # store the returned value into the master array
+			#sb $0, mainArr($0)      # Store the index of the guessed value into mainArr	
 
 			    # MAIN LOOP
 MainLoop:	add $23, $0, $0		    # Reset Flag conditional 
@@ -86,7 +86,7 @@ Open:		add $20, $0, $0		    # (Re-)Initialize index-ers
 			add $28, $0, $0
 			add $10, $0, $0
 			addi $10, $10, 1	    # Add 1 to known squares index-er
-			lbu $11, mainArr[$10]  # Load current index value into $11
+			lbu $11, mainArr($10)  # Load current index value into $11
 			# CREATES INDEX OF NEIGHBOR VALUES
 
 			beq $10, $0 NoNW	# These are selectors to decide which loop to run 
@@ -118,7 +118,7 @@ Open:		add $20, $0, $0		    # (Re-)Initialize index-ers
 
 
 
-nearBombsO:	lbu $19, nearArr[$20]   # Load current neighbor value into $19
+nearBombsO:	lbu $19, nearArr($20)   # Load current neighbor value into $19
 			addi $20, $20, 1	    # Add 1 to array index
 			bne $19, $7 nearBombsO  # If the neighbor is not a bomb, re-loop
 			addi $16, $16, 1	    # Add 1 to count of nearby flagged squares
@@ -130,15 +130,15 @@ nearBombsO:	lbu $19, nearArr[$20]   # Load current neighbor value into $19
 			# OPENS SQUARES
 			add $14, $14, $0	    # (Re-)Initialize index-er
 			addi $23, $0, 1		    # Make conditional true
-opener:		lbu $12, nearArr[$14]   # Index at first neighbor value
+opener:		lbu $12, nearArr($14)   # Index at first neighbor value
 			addi $14, $14, 1	    # Add 1 to the nearArr index-er
-			bne $12, $27 opener      # Check if the neighbor is closed, if not skip to next neighbor
+			bne $12, $27 opener     # Check if the neighbor is closed, if not skip to next neighbor
 			addi $13, $13, 1		# Add 1 to number of known values
-			lbu $13 indexArr[$14]   # Load the index of the neighbor square into $13
+			lbu $13 indexArr($14)   # Load the index of the neighbor square into $13
 			add  $2, $0, $13	    # Mine field position 25
             addi  $3, $0, 0         # Open
             swi   568               # returns result in $4 (9)
-			sb $4, mainArr[$13]     # Store the value of a opened square in the mainArr
+			sb $4, mainArr($13)     # Store the value of a opened square in the mainArr
 			bne $14, $8, opener     # Loop until Run through all indexes
 			bne $20, $13, Open	    # Loop Open until run through all squares availables
 
@@ -149,7 +149,7 @@ Flag:		add $20, $0, $0		    # (Re-)Initialize index-ers
 			add $22, $0, $0
 			add $10, $0, $0
 			addi $10, $10, 1	    # Add 1 to known squares index-er
-			lbu $11, mainArr[$10]  # Load current index value into $11
+			lbu $11, mainArr($10)  # Load current index value into $11
 			# CREATES INDEX OF NEIGHBOR VALUES
 
 			beq $10, $0 NoNW	# These are selectors to decide which loop to run 
@@ -180,14 +180,14 @@ Flag:		add $20, $0, $0		    # (Re-)Initialize index-ers
 			j neighbors
 
 
-nearBombs:	lbu $11, mainArr[$10]  # Load current index value into $11
-			lbu $19, nearArr[$20]   # Load neighbor value to index
+nearBombs:	lbu $11, mainArr($10)  # Load current index value into $11
+			lbu $19, nearArr($20)   # Load neighbor value to index
 			addi $20, $20, 1	    # Add 1 to array index
 			bne $19, $7 nearBombs
 			addi $21, $21, 1	    # Add 1 to count of nearby flagged squares
 			bne $20, $8 nearBombs
 			add $20, $0, $0
-nearClosed: lbu $19, nearArr[$20]
+nearClosed: lbu $19, nearArr($20)
 			addi $20, $20, 1	    # Add 1 to array index
 			bne $19, $9 nearClosed
 			addi $22, $22, 1	    # Add 1 to count of nearby closed squares
@@ -205,16 +205,16 @@ nearClosed: lbu $19, nearArr[$20]
 			# ASSIGNS FLAGS
 			add $14, $14, $0	    # (Re-)Initialize index-er
 			addi $24, $0, 1		    # Make conditional true
-flagger:	lbu $12, nearArr[$14]	# Load the value of the neighbor into $12
+flagger:	lbu $12, nearArr($14)	# Load the value of the neighbor into $12
 			addi $14, $14, 1	    # Add 1 to the nearArr index-er
 			beq $12, $9 flagger     # Check if the neighbor is flagged, if not skip to next neighbor
 			addi $13, $13, 1		# Add 1 to number of known values
 			addi $5, $5, 1		    # If neighbor is not closed, add 1 to number of flagged squares
-			lbu $13 indexArr[$14]   # Load the neighbor index value into $13
+			lbu $13 indexArr($14)   # Load the neighbor index value into $13
 			add  $2, $0, $13	    # Mine field position 25
             addi  $3, $0, 1         # Flag
             swi   568               # returns result in $4 (9)
-			sb $4, mainArr[$13]     # Store the value of a flagged square in the mainArr
+			sb $4, mainArr($13)     # Store the value of a flagged square in the mainArr
 			bne $14, $8, flagger    # Loop until Run through all indexes
 			bne $20, $18, Flag	    # Loop Flag until run through all squares availables
 			jr $31
@@ -222,28 +222,30 @@ flagger:	lbu $12, nearArr[$14]	# Load the value of the neighbor into $12
 Guess:		addi  $2, $0, 0		    # Mine field position 0
             addi  $3, $0, -1        # Guess
             swi   568               # returns result in $4 (-1: mine; 0-8: count)
-			beq $4, $7 bomb
-			jr $31
+			bne $4, $7 skip		    # If the guess did not return a bomb, run skip
+			addi $5, $5, 1		    # Adds 1 to the total number of flags
+			addi $4, $0, 9
+			j skip
 
 
 NoNW:		j E
 			j S
 			j SE
 			beq $21, $0 nearBombs
-			jr nearBombsO
+			j nearBombsO
 
 NoNE:		j W
 			j SW
 			j S
 			beq $21, $0 nearBombs
-			jr nearBombsO
+			j nearBombsO
 
 
 NoSW:		j N
 			j NE
 			j E
 			beq $21, $0 nearBombs
-			jr nearBombsO
+			j nearBombsO
 			
 
 
@@ -251,7 +253,7 @@ NoSE:		j NW
 			j N
 			j W
 			beq $21, $0 nearBombs
-			jr nearBombsO
+			j nearBombsO
 
 
 NoN:		j W
@@ -260,7 +262,7 @@ NoN:		j W
 			j S
 			j SE
 			beq $21, $0 nearBombs
-			jr nearBombsO
+			j nearBombsO
 
 
 NoW:		j N
@@ -269,7 +271,7 @@ NoW:		j N
 			j S
 			j SE
 			beq $21, $0 nearBombs
-			jr nearBombsO
+			j nearBombsO
 
 
 NoE:		j NW
@@ -278,7 +280,7 @@ NoE:		j NW
 			j SW
 			j S
 			beq $21, $0 nearBombs
-			jr nearBombsO
+			j nearBombsO
 
 
 NoS:		j NW
@@ -287,7 +289,7 @@ NoS:		j NW
 			j W
 			j E
 			beq $21, $0 nearBombs
-			jr nearBombsO
+			j nearBombsO
 
 
 
@@ -302,69 +304,69 @@ neighbors:  j NW
 			j S
 			j SE
 			beq $21, $0 nearBombs
-			jr nearBombsO
+			j nearBombsO
 
 
 NW:			addi $28, $10, -9
-			sb $28, indexArr[$20]
-			lbu $18, masterArr[$28]
-			sb $18, nearArr[$20]
+			sb $28, indexArr($20)
+			lbu $18, mainArr($28)
+			sb $18, nearArr($20)
 			addi $20, $20, 1
 			jr $31
 
 			# Value and index of north neighbor
 N:			addi $28, $10, -8
-			sb $28, indexArr[$20]
-			lbu $18, masterArr[$28]
-			sb $18, nearArr[$20]
+			sb $28, indexArr($20)
+			lbu $18, mainArr($28)
+			sb $18, nearArr($20)
 			addi $20, $20, 1
 			jr $31
 
 			# Value and index of northeast neighbor
 NE: 		addi $28, $10, -7
-			sb $28, indexArr[$20]
-			lbu $18, masterArr[$28]
-			sb $18, nearArr[$20]
+			sb $28, indexArr($20)
+			lbu $18, mainArr($28)
+			sb $18, nearArr($20)
 			addi $20, $20, 1
 			jr $31
 
 			# Value and index of west neighbor
 W:			addi $28, $10, -1
-			sb $28, indexArr[$20]
-			lbu $18, masterArr[$28]
-			sb $18, nearArr[$20]
+			sb $28, indexArr($20)
+			lbu $18, mainArr($28)
+			sb $18, nearArr($20)
 			addi $20, $20, 1
 			jr $31
 
 			# Value and index of east neighbor
 E:			addi $28, $10, +1
-			sb $28, indexArr[$20]
-			lbu $18, masterArr[$28]
-			sb $18, nearArr[$20]
+			sb $28, indexArr($20)
+			lbu $18, mainArr($28)
+			sb $18, nearArr($20)
 			addi $20, $20, 1
 			jr $31
 
 			# Value and index of southwest neighbor
 SW:			addi $28, $10, +7
-			sb $28, indexArr[$20]
-			lbu $18, masterArr[$28]
-			sb $18, nearArr[$20]
+			sb $28, indexArr($20)
+			lbu $18, mainArr($28)
+			sb $18, nearArr($20)
 			addi $20, $20, 1
 			jr $31
 
 			# Value and index of south neighbor
 S:			addi $28, $10, +8
-			sb $28, indexArr[$20]
-			lbu $18, masterArr[$28]
-			sb $18, nearArr[$20]
+			sb $28, indexArr($20)
+			lbu $18, mainArr($28)
+			sb $18, nearArr($20)
 			addi $20, $20, 1
 			jr $31
 
 			# Value and index of southeast neighbor
 SE:			addi $28, $10, +9
-			sb $28, indexArr[$20]
-			lbu $18, masterArr[$28]
-			sb $18, nearArr[$20]
+			sb $28, indexArr($20)
+			lbu $18, mainArr($28)
+			sb $18, nearArr($20)
 			addi $20, $20, 1
 			jr $31
 
@@ -372,81 +374,81 @@ SE:			addi $28, $10, +9
 			    # addi $14, $14, 1	    # Add 1 to the nearArr index-er
 			    # bne $12, $13 flagger    # Check if the neighbor is closed, if not skip to next neighbor
 			    # addi $5, $5, 1		    # If so, add 1 to number of flagged squares
-			    # lbu $13 indexArr[$14]
-			    # sb $13, mainArr[$13]    # Store the value of a flagged square in the mainArr
+			    # lbu $13 indexArr($14)
+			    # sb $13, mainArr($13)    # Store the value of a flagged square in the mainArr
 			    # add  $2, $0, $13	    # Mine field position 25
                 # addi  $3, $0, 1         # Flag
                 # swi   568               # returns result in $4 (9)
 			    # bne $14, $8, flagger    # Loop until Run through all indexes
 
     # upLeftF:	addi $24, $0, 1		    # Make conditional true
-    # 			lbu $12, nearArr[$0]    # Index at first neighbor value
+    # 			lbu $12, nearArr($0)    # Index at first neighbor value
     # 			bne $12, $13 upF	    # Check if the neighbor is closed, if not skip to next neighbor
     # 			addi $5, $5, 1		    # If so, add 1 to number of flagged squares
-    # 			sb $13, mainArr[]	    # Store the value of a flagged square in the mainArr
+    # 			sb $13, mainArr()	    # Store the value of a flagged square in the mainArr
     # 			addi  $2, $0, 25	    # Mine field position 25
     #             addi  $3, $0, 1         # Flag
     #             swi   568               # returns result in $4 (9)
 
     # upF:		addi $14, $0, 1		    # Add 1 to the nearArr index-er
-    # 			lbu $12, nearArr[$14]
+    # 			lbu $12, nearArr($14)
     # 			bne $12, $13 upRightF
     # 			addi $5, $5, 1
-    # 			sb $13, mainArr[]
+    # 			sb $13, mainArr()
     # 			addi  $2, $0, 25	    # Mine field position 25
     #             addi  $3, $0, 1         # Flag
     #             swi   568               # returns result in $4 (9)
 
     # upRightF:	addi $14, $0, 1
-    # 			lbu $12, nearArr[$14]
+    # 			lbu $12, nearArr($14)
     # 			bne $12, $13 rightF
     # 			addi $5, $5, 1
-    # 			sb $13, mainArr[]
+    # 			sb $13, mainArr()
     # 			addi  $2, $0, 25	    # Mine field position 25
     #             addi  $3, $0, 1         # Flag
     #             swi   568               # returns result in $4 (9)
 
     # rightF:		addi $14, $0, 1
-    # 			lbu $12, nearArr[$14]
+    # 			lbu $12, nearArr($14)
     # 			bne $12, $13 leftF
     # 			addi $5, $5, 1
-    # 			sb $13, mainArr[]
+    # 			sb $13, mainArr()
     # 			addi  $2, $0, 25	    # Mine field position 25
     #             addi  $3, $0, 1         # Flag
     #             swi   568               # returns result in $4 (9)
 
     # leftF:		addi $14, $0, 1
-    # 			lbu $12, nearArr[$14]
+    # 			lbu $12, nearArr($14)
     # 			bne $12, $13 botRightF
     # 			addi $5, $5, 1
-    # 			sb $13, mainArr[]
+    # 			sb $13, mainArr()
     # 			addi  $2, $0, 25	    # Mine field position 25
     #             addi  $3, $0, 1         # Flag
     #             swi   568               # returns result in $4 (9)
 
     # botRightF:	addi $14, $0, 1
-    # 			lbu $12, nearArr[$14]
+    # 			lbu $12, nearArr($14)
     # 			bne $12, $13 botF
     # 			addi $5, $5, 1
-    # 			sb $13, mainArr[]
+    # 			sb $13, mainArr()
     # 			addi  $2, $0, 25	    # Mine field position 25
     #             addi  $3, $0, 1         # Flag
     #             swi   568               # returns result in $4 (9)
 
     # botF:		addi $14, $0, 1
-    # 			lbu $12, nearArr[$14]
+    # 			lbu $12, nearArr($14)
     # 			bne $12, $13 botLeftF
     # 			addi $5, $5, 1
-    # 			sb $13, mainArr[]
+    # 			sb $13, mainArr()
     # 			addi  $2, $0, 25	    # Mine field position 25
     #             addi  $3, $0, 1         # Flag
     #             swi   568               # returns result in $4 (9)
 
     # botLeftF:	addi $14, $0, 1
-			    # lbu $12, nearArr[$14]
+			    # lbu $12, nearArr($14)
 			    # bne $12, $13 end
 			    # addi $5, $5, 1
-			    # sb $13, mainArr[]
+			    # sb $13, mainArr()
 			    # addi  $2, $0, 25	    # Mine field position 25
                 # addi  $3, $0, 1         # Flag
                 # swi   568               # returns result in $4 (9)
