@@ -134,7 +134,6 @@ opener:		lbu $12, nearArr[$14]   # Index at first neighbor value
 			addi $14, $14, 1	    # Add 1 to the nearArr index-er
 			bne $12, $27 opener      # Check if the neighbor is closed, if not skip to next neighbor
 			addi $13, $13, 1		# Add 1 to number of known values
-			addi $5, $5, 1		    # If so, add 1 to number of opened squares
 			lbu $13 indexArr[$14]   # Load the index of the neighbor square into $13
 			add  $2, $0, $13	    # Mine field position 25
             addi  $3, $0, 0         # Open
