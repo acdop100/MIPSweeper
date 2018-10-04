@@ -11,7 +11,7 @@
     # $6 = Master array
     # $7 = -1
     # $8 = 7 (max index of nearArr, 0-7)
-    # $9 = 10 (value of flagged of mainArr)
+    # $9 = 9 (value of flagged of mainArr)
     # $10 = Current master index
     # $11 = Where mainArr($10) is loaded into
     # $12 = NearArr indexer
@@ -44,20 +44,21 @@
 
 .data
 
-			mainArr: .word 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF
-			nearArr: .word 0xFFFFFFFF, 0xFFFFFFFF    # Array of neighbor squares' values
-			indexArr: .word 0xFFFFFFFF, 0xFFFFFFFF     # Array of neighbor squares' indices 
+			mainArr: .word 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE, 0xEEEEEEEE
+			nearArr: .word 0xEEEEEEEE, 0xEEEEEEEE    # Array of neighbor squares' values
+			indexArr: .word 0xEEEEEEEE, 0xEEEEEEEE     # Array of neighbor squares' indices 
 
 .text
 			# First code run
 			swi   567	   	        # Bury mines (returns # buried in $1)
 			add $5, $0, $0		    # Creates initial variable to put flags in
 			addi $7, $0, -1		    # Initialize $7 to be value of a bomb
-			addi $9, $0, 10		    # Initialize $9 to be the value assigned to flagged squares
+			addi $9, $0, 9		    # Initialize $9 to be the value assigned to flagged squares
 			add $29, $31, $0	    # Save memory link
-			addi $27, $0, 9		    # Initialize $27 to 9 
+			addi $27, $0, 238		    # Initialize $27 to 9 
 			addi $8, $0, 8		    # Initialize $8 to max value of neighbor arrays
 			addi $13, $0, 1		    # Assume 1 square will be known from first guess
+			add $23, $0, $0
 
 			    # INITIAL GUESS
 			addi  $2, $0, 0		    # Mine field position 0
@@ -67,18 +68,18 @@
 			addi $5, $5, 1		    # Adds 1 to the total number of flags
 			addi $4, $0, 9
 			
-skip:		sb $4, mainArr($0)	    # store the returned value into the master array
+skip:		sb $4, mainArr($23)	    # store the returned value into the master array
 			#sb $0, mainArr($0)      # Store the index of the guessed value into mainArr	
 
 			    # MAIN LOOP
-MainLoop:	add $23, $0, $0		    # Reset Flag conditional 
+MainLoop:	addi $23, $0, 09
+			add $23, $0, $0		    # Reset Flag conditional 
 			add $24, $0, $0		    # Reset Open conditional 
 			add $10, $0, $0
 			jal Flag				    # Run the flag function
 			add $10, $0, $0
 			jal Open				    # Run the Open function
 			add $25, $24, $23	    # Add both conditinoal values
-			addi $16, $0, 255
 			beq $0, $25 Guess	    # If neither do anything, run Guess function
 			bne $1, $5 MainLoop	    # If the number of flags != number of bombs, keep looping
 			jr  $29  	  		    # return to OS - ENDS
@@ -185,14 +186,14 @@ nearBombs:	lbu $11, mainArr($10)   # Load current index value into $11
 			lbu $19, nearArr($20)   # Load neighbor value to index
 			addi $20, $20, 1	    # Add 1 to array index
 			beq $20, $8 endif		# Loop until the index value is 7
-			bne $19, $7 nearBombs	# If the value of the square is not a bomb, skip it
+			bne $19, $25 nearBombs	# If the value of the square is not a bomb, skip it
 			addi $21, $21, 1	    # Add 1 to count of nearby flagged squares
 			add $20, $0, $0
 nearClosed: lbu $19, nearArr($20)
 			addi $20, $20, 1	    # Add 1 to array index
-			bne $19, $9 nearClosed
+			bne $19, $9 nearClosed	# Loop if the index is not flagged
 			addi $22, $22, 1	    # Add 1 to count of nearby closed squares
-			bne $20, $8 nearClosed
+			bne $20, $8 nearClosed	# Loop until the index value is 7
 			add $18, $21, $22	    # Finds total size
 			bne $18, $11, Flag	    # If Totalsize is not equal, loop back
 			beq $0, $11, Flag	    # If the current index equals zero, loop back
@@ -215,12 +216,12 @@ flagger:	lbu $12, nearArr($14)	# Load the value of the neighbor into $12
             swi   568               # returns result in $4 (9)
 			sb $4, mainArr($13)     # Store the value of a flagged square in the mainArr
 endif:		addi $10, $0, 1
-			bne $20, $13, Flag	    # Loop Flag until run through all squares availables
+			bne $10, $13, Flag	    # Loop Flag until run through all squares availables
 			jr $30
 
 Guess:		addi $23, $23, 1
 			lbu $24, mainArr($23)
-			bne $24, $16, Guess		# If the index of mainArr at $23 isnt FF, then loop until it does
+			bne $24, $27, Guess		# If the index of mainArr at $23 isnt FF, then loop until it does
 			add  $2, $0, $23		# Mine field position 0
             addi  $3, $0, -1        # Guess
             swi   568               # returns result in $4 (-1: mine; 0-8: count)
