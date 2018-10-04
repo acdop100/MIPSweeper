@@ -38,7 +38,7 @@
     # Make sure "jr"'s are functioning properly - *NOT* DONE
     # Make sure the program is indexing correctly - *NOT* DONE
     # Create array of neighboring values and assign to correct array - *NOT* DONE
-    # Create array of neighboring value INDECIES - *NOT* DONE
+    # Create array of neighboring value indices - *NOT* DONE
     # Comment all code - 90% DONE
 
 .data
@@ -46,7 +46,7 @@
 mainArr: .word 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909
 knownArr: .word 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909	    # Array of known values
 nearArr: .word 0x09090909, 0x09090909, 0x09090909, 0x09090909     # Array of neighbor squares' values
-indexArr: .word 0x09090909, 0x09090909, 0x09090909, 0x09090909     # Array of neighbor squares' indecies 
+indexArr: .word 0x09090909, 0x09090909, 0x09090909, 0x09090909     # Array of neighbor squares' indices 
 
 .text
 			    # First code run
