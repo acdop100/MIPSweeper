@@ -15,7 +15,7 @@
     # $10 = Current master index
     # $11 = Where mainArr[$10] is loaded into
     # $12 = NearArr indexer
-    # $13 = Number of values in knownArr
+    # $13 = Number of values in mainArr
     # $16 = flag loop conditional
     # $17 = 
 	# $18 = 
@@ -37,14 +37,13 @@
     # Complete flagger and Opener action loops - DONE
     # Make sure "jr"'s are functioning properly - *NOT* DONE
     # Make sure the program is indexing correctly - *NOT* DONE
-    # Create array of neighboring values and assign to correct array - *NOT* DONE
-    # Create array of neighboring value indices - *NOT* DONE
+    # Create array of neighboring values and assign to correct array - DONE
+    # Create array of neighboring value indices - DONE
     # Comment all code - 90% DONE
 
 .data
 
 mainArr: .word 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909
-knownArr: .word 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909, 0x09090909	    # Array of known values
 nearArr: .word 0x09090909, 0x09090909, 0x09090909, 0x09090909     # Array of neighbor squares' values
 indexArr: .word 0x09090909, 0x09090909, 0x09090909, 0x09090909     # Array of neighbor squares' indices 
 
@@ -68,7 +67,7 @@ indexArr: .word 0x09090909, 0x09090909, 0x09090909, 0x09090909     # Array of ne
 			addi $4, $0, 9
 			
 skip:		sb $4, mainArr[$0]	    # store the returned value into the master array
-			sb $0, knownArr[$0]     # Store the index of the guessed value into knownArr	
+			#sb $0, mainArr[$0]      # Store the index of the guessed value into mainArr	
 
 			    # MAIN LOOP
 MainLoop:	add $23, $0, $0		    # Reset Flag conditional 
@@ -82,75 +81,48 @@ MainLoop:	add $23, $0, $0		    # Reset Flag conditional
 
 
 Open:		add $20, $0, $0		    # (Re-)Initialize index-ers
-			add $21, $0, $0
+			addi $21, $0, 1
+			add $16, $0, $0
 			add $28, $0, $0
 			add $10, $0, $0
 			addi $10, $10, 1	    # Add 1 to known squares index-er
-			lbu $11, knownArr[$10]  # Load current index value into $11
+			lbu $11, mainArr[$10]  # Load current index value into $11
 			# CREATES INDEX OF NEIGHBOR VALUES
 
-			# Value and index of northwest neighbor
-			addi $28, $10, -9
-			sb $28, indexArr[$20]
-			lbu $18, masterArr[$28]
-			sb $18, nearArr[$20]
-			addi $20, $20, 1
+			beq $10, $0 NoNW	# These are selectors to decide which loop to run 
+			addi $28, $0, 7
+			beq $10, $28 NoNE	# For example, if the current array index is 124, we know that this is the pixel with no North or East neighbors
+			addi $28, $0, 55
+			beq $10, $28 NoSW
+			addi $28, $0, 63
+			beq $10, $28 NoSE
 
-			# Value and index of north neighbor
-			addi $28, $10, -8
-			sb $28, indexArr[$20]
-			lbu $18, masterArr[$28]
-			sb $18, nearArr[$20]
-			addi $20, $20, 1
+			addi $2, $0, 7
+			slt $18, $10, $2
+			bne $18, $0, NoN
 
-			# Value and index of northeast neighbor
-			addi $28, $10, -7
-			sb $28, indexArr[$20]
-			lbu $18, masterArr[$28]
-			sb $18, nearArr[$20]
-			addi $20, $20, 1
+			addi $2, $0, 55
+			slt $18, $2, $10
+			bne $18, $0, NoS
 
-			# Value and index of west neighbor
-			addi $28, $10, -1
-			sb $28, indexArr[$20]
-			lbu $18, masterArr[$28]
-			sb $18, nearArr[$20]
-			addi $20, $20, 1
+			addi $28, $0, 8		# I use Mod to find whether a pixel is at an index with no East or West neighbor
+			div $10, $28
+			mfhi	$18
+			beq $18 $0, NoW
+			
+			addi $17, $0, 7
+			div $10, $28
+			mfhi	$18
+			beq $17 $18, NoE
+			j neighbors
 
-			# Value and index of east neighbor
-			addi $28, $10, +1
-			sb $28, indexArr[$20]
-			lbu $18, masterArr[$28]
-			sb $18, nearArr[$20]
-			addi $20, $20, 1
-
-			# Value and index of southwest neighbor
-			addi $28, $10, +7
-			sb $28, indexArr[$20]
-			lbu $18, masterArr[$28]
-			sb $18, nearArr[$20]
-			addi $20, $20, 1
-
-			# Value and index of south neighbor
-			addi $28, $10, +8
-			sb $28, indexArr[$20]
-			lbu $18, masterArr[$28]
-			sb $18, nearArr[$20]
-			addi $20, $20, 1
-
-			# Value and index of southeast neighbor
-			addi $28, $10, +9
-			sb $28, indexArr[$20]
-			lbu $18, masterArr[$28]
-			sb $18, nearArr[$20]
-			addi $20, $20, 1
 
 
 nearBombsO:	lbu $19, nearArr[$20]   # Load current neighbor value into $19
 			addi $20, $20, 1	    # Add 1 to array index
 			bne $19, $7 nearBombsO  # If the neighbor is not a bomb, re-loop
-			addi $21, $21, 1	    # Add 1 to count of nearby flagged squares
-			bne $21, $11, Open	    # If the square's value is equal to the number of flagged squares, skip
+			addi $16, $16, 1	    # Add 1 to count of nearby flagged squares
+			bne $16, $11, Open	    # If the square's value is equal to the number of flagged squares, skip
 			beq $20, $8 opener      # Loop through values until all of the neighbor values have been run through
 			bne $10, $13, Open		# Keep looping until all known values are run through
 			jr $31
@@ -176,10 +148,9 @@ opener:		lbu $12, nearArr[$14]   # Index at first neighbor value
 Flag:		add $20, $0, $0		    # (Re-)Initialize index-ers
 			add $21, $0, $0
 			add $22, $0, $0
-			add $16, $0, $0
 			add $10, $0, $0
 			addi $10, $10, 1	    # Add 1 to known squares index-er
-			lbu $11, knownArr[$10]  # Load current index value into $11
+			lbu $11, mainArr[$10]  # Load current index value into $11
 			# CREATES INDEX OF NEIGHBOR VALUES
 
 			beq $10, $0 NoNW	# These are selectors to decide which loop to run 
@@ -199,17 +170,18 @@ Flag:		add $20, $0, $0		    # (Re-)Initialize index-ers
 			bne $18, $0, NoS
 
 			addi $28, $0, 8		# I use Mod to find whether a pixel is at an index with no East or West neighbor
-			div $1, $28
+			div $10, $28
 			mfhi	$18
 			beq $18 $0, NoW
 			
 			addi $17, $0, 7
-			div $1, $28
+			div $10, $28
 			mfhi	$18
 			beq $17 $18, NoE
+			j neighbors
 
 
-nearBombs:	lbu $11, knownArr[$10]  # Load current index value into $11
+nearBombs:	lbu $11, mainArr[$10]  # Load current index value into $11
 			lbu $19, nearArr[$20]   # Load neighbor value to index
 			addi $20, $20, 1	    # Add 1 to array index
 			bne $19, $7 nearBombs
@@ -252,6 +224,149 @@ Guess:		addi  $2, $0, 0		    # Mine field position 0
             addi  $3, $0, -1        # Guess
             swi   568               # returns result in $4 (-1: mine; 0-8: count)
 			beq $4, $7 bomb
+			jr $31
+
+
+NoNW:		j E
+			j S
+			j SE
+			beq $21, $0 nearBombs
+			jr nearBombsO
+
+NoNE:		j W
+			j SW
+			j S
+			beq $21, $0 nearBombs
+			jr nearBombsO
+
+
+NoSW:		j N
+			j NE
+			j E
+			beq $21, $0 nearBombs
+			jr nearBombsO
+			
+
+
+NoSE:		j NW
+			j N
+			j W
+			beq $21, $0 nearBombs
+			jr nearBombsO
+
+
+NoN:		j W
+			j E
+			j SW
+			j S
+			j SE
+			beq $21, $0 nearBombs
+			jr nearBombsO
+
+
+NoW:		j N
+			j NE
+			j E
+			j S
+			j SE
+			beq $21, $0 nearBombs
+			jr nearBombsO
+
+
+NoE:		j NW
+			j N
+			j W
+			j SW
+			j S
+			beq $21, $0 nearBombs
+			jr nearBombsO
+
+
+NoS:		j NW
+			j N
+			j NE
+			j W
+			j E
+			beq $21, $0 nearBombs
+			jr nearBombsO
+
+
+
+	 
+			 # Value and index of northwest neighbor
+neighbors:  j NW
+			j N
+			j NE
+			j W
+			j E
+			j SW
+			j S
+			j SE
+			beq $21, $0 nearBombs
+			jr nearBombsO
+
+
+NW:			addi $28, $10, -9
+			sb $28, indexArr[$20]
+			lbu $18, masterArr[$28]
+			sb $18, nearArr[$20]
+			addi $20, $20, 1
+			jr $31
+
+			# Value and index of north neighbor
+N:			addi $28, $10, -8
+			sb $28, indexArr[$20]
+			lbu $18, masterArr[$28]
+			sb $18, nearArr[$20]
+			addi $20, $20, 1
+			jr $31
+
+			# Value and index of northeast neighbor
+NE: 		addi $28, $10, -7
+			sb $28, indexArr[$20]
+			lbu $18, masterArr[$28]
+			sb $18, nearArr[$20]
+			addi $20, $20, 1
+			jr $31
+
+			# Value and index of west neighbor
+W:			addi $28, $10, -1
+			sb $28, indexArr[$20]
+			lbu $18, masterArr[$28]
+			sb $18, nearArr[$20]
+			addi $20, $20, 1
+			jr $31
+
+			# Value and index of east neighbor
+E:			addi $28, $10, +1
+			sb $28, indexArr[$20]
+			lbu $18, masterArr[$28]
+			sb $18, nearArr[$20]
+			addi $20, $20, 1
+			jr $31
+
+			# Value and index of southwest neighbor
+SW:			addi $28, $10, +7
+			sb $28, indexArr[$20]
+			lbu $18, masterArr[$28]
+			sb $18, nearArr[$20]
+			addi $20, $20, 1
+			jr $31
+
+			# Value and index of south neighbor
+S:			addi $28, $10, +8
+			sb $28, indexArr[$20]
+			lbu $18, masterArr[$28]
+			sb $18, nearArr[$20]
+			addi $20, $20, 1
+			jr $31
+
+			# Value and index of southeast neighbor
+SE:			addi $28, $10, +9
+			sb $28, indexArr[$20]
+			lbu $18, masterArr[$28]
+			sb $18, nearArr[$20]
+			addi $20, $20, 1
 			jr $31
 
     # Index at first neighbor value
