@@ -38,7 +38,7 @@
 			addi $9, $0, 9			# Initialize $9 to be the value assigned to flagged squares
 			add $13, $0, $0			# Assume 1 square will be known from first guess	
 			addi $15, $0, 10		# Assign 10 to $15 to denote "Fully known" squares
-			add $26, $0, $0			# Initialize $23 to zero
+			add $26, $0, $0			# Initialize $26 to zero
 			addi $27, $0, 238		# Initialize $27 to 0
 			add $17, $31, $0	    # Save memory link
 
@@ -88,10 +88,10 @@ FlagOrOpen:	lbu $12, indecies($10)  # Load current index value into $12
 
 next:		add $6, $0, $0			# (Re-)Initialize index-ers
 			add $20, $0, $0
-			j neighVals				# Jumps to neighbor value finder
+			jal neighVals				# Jumps to neighbor value finder
 
 			# FIND NUMBER OF NEIGHBOR BOMBS
-nearBombsO:	beq $11, $0, evaluate	# If the square's value is 0, skip to evaluate function
+			beq $11, $0, evaluate	# If the square's value is 0, skip to evaluate function
 nearBombs:	beq $20, $8 nearClose	# Loop until the index value is 7
 			lbu $19, nearArr($20)   # Load neighbor value to index
 			addi $20, $20, 1	    # Add 1 to array index
@@ -120,7 +120,7 @@ check:		add $18, $6, $22	    # Finds total size
 			
 			# MAIN EVALUATION FUNCTION
 evaluate:	add $14, $0, $0			# (Re-)Initialize index-er
-			sb $15, mainArr($12)
+			sb $15, mainArr($12)	# Insert the value of $15 into the position to denote a square with fully known neighbors
 evald:		beq $14, $8, endif      # Loop until Run through all indexes
 			lbu $12, nearArr($14)   # Index at first neighbor value
 			lbu $11 indexArr($14)   # Load the index of the neighbor square into $11
@@ -149,7 +149,8 @@ endif:		beq $1, $5, end			# If all flags are found, end game
 			j nowOpen
 
 # FINDS NEIGHBOR VALUES
-neighVals:  addi $8, $0, 3		    # Initialize $8 to max value of neighbor arrays
+neighVals:  add $23, $31, $0
+			addi $8, $0, 3		    # Initialize $8 to max value of neighbor arrays
 			beq $12, $0 NoNW		# These are selectors to decide which loop to run 
 			addi $28, $0, 7
 			beq $12, $28 NoNE		# For example, if the current array index is 7, we know that this is the pixel with no North or East neighbors
@@ -242,7 +243,6 @@ NoN:		jal W
 			jal SE
 			
 neighEnd:	add $20, $0, $0
-			beq $11, $0 nearBombsO
-			j nearBombs
+			jr $23
 
 
