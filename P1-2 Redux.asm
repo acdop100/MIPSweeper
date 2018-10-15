@@ -29,39 +29,84 @@
 # $27 = 238 (Number of closed square)
 # $28 = value of neighbor square
 
+# NOTES: Just add bomb counter to neigh function?
+
 ################# PROGRAM EXPLANATION ####################
 # First, 4 word arrays are created: 
-# - mainArr is the array of all values for the game array. I used a 10x10 length array because this lets me not have to deal with edge cases. All edges are assigned the value of 11 (0B), and empty squares are EE.
+# - mainArr is the array of all values for the game array. I used a 10x10 length array because this lets me not have to deal with edge cases. All edges are assigned the value of 11 (0B), and empty squares are EE
 # - nearArr is an 8 byte array to store the value of a square's neighbors
 # - indexArr is the same, except it stores the index number for the neighbros instead of their values
 # - neighArr: an array of the values of where the neighbors are relevant to the current square (-11, -10, -9, -1, 1, 9, 10, 11)
 # 
-# After those are declared, the variables that needed repeatedly throughout the program are assigned. You can see what the purpose of each register is above.
-# Some of these registers are just initialized here first because there are needed for the guess function. Some retain their value for the duration of the program.
-# 
+# After those are declared, the variables that needed repeatedly throughout the program are assigned. You can see what the purpose of each register is above
+# Some of these registers are just initialized here first because there are needed for the guess function. Some retain their value for the duration of the program
+
 #### GUESSING ####
-# Guessing is achieved by having a register ($26) be the value of the previous square with unknown value. The program then loops until it can find the next square with an unknown value.
+# Guessing is achieved by having a register ($26) be the value of the previous square with unknown value. The program then loops until it can find the next square with an unknown value
 # The value is then stored in $11 to send to the subtraction function (explained later)
-# The returned value of 11 is the proper index value relevant to the games 8x8 board and not my 10x10 board.
+# The returned value of 11 is the proper index value relevant to the games 8x8 board and not my 10x10 board
 # The function then assigns that value to $2 and guesses
 # If the guess returned a bomb, make $4 equal to 9 and store that instead and add to our flag counter ($5) and number of known squares ($13)
 # Also, if the guess run is the first guess, it has the opportunity to guess again if the first square was a bomb. Otherwise it jumps to MainLoop
-# 
+ 
 #### MAINLOOP ####
 # All mainloop really does is reset some condintionals I set and then runs the FlagOrOpen function
-# 
+
 #### FLAGOROPEN ####
 # This one is a doozy so i'll break it up by it's sub-functions
-# First is the main fiiter. 
-# First, it checks whether the current square value ($11) is an edge square or a square of unknown value, and if so, jump to endNot, which adds 1 to the mainArr index-er ($12) but doesn't add to the number of checked squares.
-# Second, it checks whether the square is a square where we know all the neighbor values already (Fully known) or a bomb, and if so skip to endIf (explained later)
-# Finally it checks whether the loop is running in flag mode. If so, check to see whether $11 is zero, and if so skip to next number.
-# 
+# - First is the main fiiter. 
+# - First, it checks whether the current square value ($11) is an edge square or a square of unknown value, and if so, jump to endNot, which adds 1 to the mainArr index-er ($12) but doesn't add to the number of checked squares.
+# - Second, it checks whether the square is a square where we know all the neighbor values already (Fully known) or a bomb, and if so skip to endIf (explained later)
+# - Finally it checks whether the loop is running in flag mode. If so, check to see whether $11 is zero, and if so skip to next number
+
 # Next we move to Next (hehe) and resets some variables for neighLoop
-# 
+
 #### NEIGHLOOP ####
-# neighLoop finds all of the neighbor's values and the square's index values and stores both in nearArr and indexArr respectively. 
-# neighLoop only adds values to those arrays if the value is not an edge square. The total number of added values is stored in $8
+# neighLoop finds all of the neighbor's values and the square's index values and stores both in nearArr and indexArr respectively
+# - neighLoop only adds values to those arrays if the value is not an edge square. The total number of added values is stored in $8
+# - Ends when the loop is run 8 times
+
+#### NEARBOMBS ####
+# This loop counts the number of neighbors that are bombs
+# - loops $8 amount of times so save DI's 
+# - Here, $6 is the number of nearby bombs
+
+#### NEARCLOSE #### 
+# This is a poorly named function if you can even call it that. Basically this says that if we are running open, just jump to evaluate at this point, otherwise go to skippy
+
+#### SKIPPY ####
+# Another poorly named jump point. Thats all this is
+
+#### NEARCLOSED #### 
+# Like its sister function, just counts the number of neighbor squares with no value
+# - Loops $8 amount of times
+# - Number count stored in $22
+
+#### CHECK ####
+# First check func, just checks to see if the number of nearby squares is zero, and if so replace its value with "Fully known square" ($15)
+
+#### CHECK2 ####
+# This checks the conditionals for flagging, i.e. if the number of bombs and closed squares is not equal to the square's value, jump to endif 
+
+#### EVALUATE ####
+# This just resets the index-er ($14), makes the guessing conditional false, and inserts the F.K.S. value into that index 
+
+#### EVALD ####
+# The big mama. This bad boy does all of the flagging and opening of squares. 
+# - Loops until a neighbor is found whose value is closed.
+# - Subtract function is run to find proper index of the neighbor in regards to the 8x8 array
+# - square is then flagged/opened
+ 
+#### ENDIF ####
+# This function adds 1 to count of squares run through ($10) and ends the main loop if the number of run sqaures equals the number of known squares
+# - This allows the loop to run even when we add new values to the array in places before the current index
+# - This also adds 1 to the indexer ($12), or adds 2 if we are jumping to a new row in the array
+# - Also has conditional for whether the FlagOrOpen loop is running in flag or open mode and can switch between them
+# 
+#### SUBTRACT #### 
+# Subtract sees whether the neighbor index is on the row above, row below, or current row of the index. It then subtracts the correct amount to make the index fit the 8x8 array properly
+# - Uses modulo to find the row and correct amount of indecies to subtract
+# 
 
 .data
 			mainArr: .word 	0x0B0B0B0B, 0x0B0B0B0B, 0xEE0B0B0B, 0xEEEEEEEE, 0x0BEEEEEE, 0xEEEEEE0B, 0xEEEEEEEE, 0xEE0B0BEE, 0xEEEEEEEE, 0x0BEEEEEE, 0xEEEEEE0B, 0xEEEEEEEE, 0xEE0B0BEE, 0xEEEEEEEE, 0x0BEEEEEE, 0xEEEEEE0B, 0xEEEEEEEE, 0xEE0B0BEE, 0xEEEEEEEE, 0x0BEEEEEE, 0xEEEEEE0B, 0xEEEEEEEE, 0x0B0B0BEE, 0x0B0B0B0B, 0x0B0B0B0B
@@ -167,12 +212,11 @@ check:		bne $22, $0, check2
 
 check2:		add $18, $6, $22	    # Finds total size
 			bne $18, $11, endif	    # If Totalsize is not equal, loop back
-			beq $0, $11, endif	    # If the current index equals zero, loop back
 			
 			
 			# MAIN EVALUATION FUNCTION
 evaluate:	add $14, $0, $0			# (Re-)Initialize index-er
-			addi $23, $0, 1		    # Make flag conditional true
+			addi $23, $0, 1		    # Make guessing conditional false
 			sb $15, mainArr($12)	# Insert the value of $15 into the position to denote a square with fully known neighbors
 evald:		beq $14, $8, endif      # Loop until Run through all indexes
 			lbu $11 indexArr($14)   # Load the index of the neighbor square into $11
