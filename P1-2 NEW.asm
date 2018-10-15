@@ -31,8 +31,8 @@
 			nearArr: .word 	0xEEEEEEEE, 0xEEEEEEEE   	# Array of neighbor squares' values
 			indexArr: .word 0xEEEEEEEE, 0xEEEEEEEE     	# Array of neighbor squares' indices 
 			neighArr: .word 0xFFF7F6F5, 0x0B0A0901    	# Array of neighbor squares' change values 
-			subArr: .word 	0x31271D13, 0x594F453B		# Array of values to compare for subtraction 
-			subvalsArr: .word 0xEFF1F3F5, 0xE7E9EBED 	# Array of values to subtract 
+			subArr: .word 	0x313B454F, 0x09131D27		# Array of values to compare for subtraction 
+			subvalsArr: .word 	0xEDEBE9E7, 0xF5F3F1EF	# Array of values to subtract 
 .text
 			# First code run
 			swi   567	   	        # Bury mines (returns # buried in $1)
@@ -43,6 +43,7 @@
 			addi $15, $0, 10		# Assign 10 to $15 to denote "Fully known" squares
 			addi $16, $0, 11		# Assign 11 (0B) to 16 for filtering
 			add $17, $31, $0	    # Save memory link
+			add $21, $0, $0
 			addi $26, $0, 11		# Initialize $26 to zero
 			addi $27, $0, 238		# Initialize $27 to 0
 			
@@ -51,9 +52,8 @@
 			j skip
 			
 			# MAIN LOOP
-MainLoop:	addi $21, $0, 1
-			add $24, $0, $0
-			add  $3, $0, $0         # Flag
+MainLoop:	add $24, $0, $0		    # Reset guess conditional 
+			add $21, $0, $0
 			j resetTen				# Run the Open function
 nowCheck:	bne $0, $24 MainLoop	# If neither do anything, run Guess function
 Guess:		addi $26, $26, 1
@@ -61,7 +61,7 @@ Guess:		addi $26, $26, 1
 			bne $24, $27, Guess		# If the index of mainArr at $24 isnt FF, then loop until it does
 			add $11, $26, $0
 			jal subtract
-			add  $2, $0, $11		# Mine field position $11
+			add  $2, $0, $11		# Mine field position 0
 skip:       addi  $3, $0, -1        # Guess
             swi   568               # returns result in $4 (-1: mine; 0-8: count)
 			bne $4, $7 skip2	    # If the guess did not return a bomb, run skip
@@ -70,7 +70,7 @@ skip:       addi  $3, $0, -1        # Guess
 skip2:		sb $4, mainArr($26)		# store the returned value into the master array
 			addi $13, $13, 1
 			bne $2, $0, MainLoop
-			bne $4, $9, MainLoop
+			bne $4, $7, MainLoop
 			j Guess
 			
 			# CHOOSES WHICH SQUARES TO FLAG/OPEN
@@ -132,10 +132,8 @@ check2:		add $18, $6, $22	    # Finds total size
 			bne $18, $11, endif	    # If Totalsize is not equal, loop back
 			beq $0, $11, endif	    # If the current index equals zero, loop back
 			
-			
 			# MAIN EVALUATION FUNCTION
 evaluate:	add $14, $0, $0			# (Re-)Initialize index-er
-			addi $24, $0, 1		    # Make flag conditional true
 			sb $15, mainArr($12)	# Insert the value of $15 into the position to denote a square with fully known neighbors
 evald:		beq $14, $8, endif      # Loop until Run through all indexes
 			lbu $11 indexArr($14)   # Load the index of the neighbor square into $11
@@ -144,12 +142,17 @@ evald:		beq $14, $8, endif      # Loop until Run through all indexes
 			bne $20, $27 evald      # Check if the neighbor is closed, if not skip to next neighbor
 			add $25, $11, $0
 			jal subtract
-			addi $13, $13, 1		# Add 1 to number of known values
-			bne $21, $0 notflag
-			addi $5, $5, 1
 
-notflag:	add  $2, $0, $11	    # Evaluate at position $11
-			swi   568               # returns result in $4 (9)
+flagger:	addi $13, $13, 1		# Add 1 to number of known values
+			add  $2, $0, $11	    # Evaluate at position $11
+			bne $21, $0 opener		# Check flag vs. open conditional
+			addi  $3, $0, 1         # Flag
+			addi $5, $5, 1		    # Adds 1 to the total number of flags
+			j evalEnd
+			
+opener:		addi  $3, $0, 0         # Open
+evalEnd:    swi   568               # returns result in $4 (9)
+			addi $24, $0, 1		    # Make open conditional true
 			sb $4, mainArr($25)     # Store the value of a opened square in the mainArr
 			bne $14, $8, evald      # Loop until Run through all indexes
 
@@ -161,16 +164,15 @@ endif:		beq $1, $5, end			# If all flags are found, end game
 			bne $23, $9, lineSkip	# If it is, add another to get to the next index
 			addi $12, $12, 2		# Add 2 to the index because we jump to next line
 lineSkip:	bne $10, $13, FlagOrOpen # Loop Flag until run through all squares availables
-			beq $21, $0 nowCheck	# If this was the Open loop, go to nowCheck
-			add $21, $0, $0			# Add 1 to the index
-			addi  $3, $0, 1         # Open
+			bne $21, $0 nowCheck	# If this was the Open loop, go to nowCheck
+			addi $21, $0, 1			# Add 1 to the index
 			j resetTen				# Jump to resetTen
 
 			#Figure out how much to subtract
 subtract:	add $20, $0, $0			# Reset indecies
 			add $6, $0, $0
 sbubby:		lb $28, subArr($20)		# Load the value of the array into $28
-			slt $28, $28, $11		# Is $11 less than $28?
+			slt $28, $11, $28		# Is $11 less than $28?
 			bne $28, $0, noSub		# If so, skip to noSub
 			lb $28, subvalsArr($20)	# If not, load the correct value to subtract into $28...
 			add $11, $11, $28		# ... And subtract it from $11
